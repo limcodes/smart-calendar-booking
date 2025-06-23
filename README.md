@@ -7,7 +7,7 @@ rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
     // Basic user profile data - readable by anyone, writable only by the user
-    match /users/{userId}/profile {
+    match /users/{userId} {
       allow read: if true; // Public profiles for booking pages
       allow write: if request.auth != null && request.auth.uid == userId;
     }
@@ -39,8 +39,9 @@ service cloud.firestore {
     // User usernames collection for username uniqueness check
     match /usernames/{username} {
       allow read: if true;
-      allow write: if request.auth != null && 
-                   (resource == null || resource.data.userId == request.auth.uid);
+      allow create: if request.auth != null; // Allow new users to create usernames
+      allow update, delete: if request.auth != null && 
+                   (resource == null || resource.data.uid == request.auth.uid);
     }
   }
 }
