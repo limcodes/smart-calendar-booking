@@ -68,7 +68,7 @@ const Header: React.FC = () => {
                   </Button>
                 )}
                 
-                {/* User profile menu */}
+                {/* User account menu */}
                 <IconButton onClick={handleMenuOpen} color="inherit" sx={{ ml: 1 }}>
                   <Avatar 
                     sx={{ width: 32, height: 32, bgcolor: 'secondary.main' }}
@@ -90,9 +90,6 @@ const Header: React.FC = () => {
                     horizontal: 'right',
                   }}
                 >
-                  <MenuItem component={Link} to="/profile" onClick={handleMenuClose}>
-                    Profile
-                  </MenuItem>
                   <MenuItem onClick={handleLogout}>Logout</MenuItem>
                 </Menu>
               </>
