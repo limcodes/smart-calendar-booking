@@ -171,13 +171,22 @@ const TimeSlotSelector: React.FC = () => {
   const selectedDateObj = selectedDate ? parse(selectedDate, 'yyyy-MM-dd', new Date()) : null;
   
   useEffect(() => {
-    if (selectedPlace && selectedDate && selectedDateObj) {
-      // Pass selectedPlace.id and selectedDateObj (Date object) to getAvailableSlots
-      const slots = getAvailableSlots(selectedPlace.id, selectedDateObj);
-      setAvailableSlots(slots);
-      setSelectedSlot(null);
-      setIsFormOpen(false);
-    }
+    const fetchAvailableSlots = async () => {
+      if (selectedPlace && selectedDate && selectedDateObj) {
+        // Pass selectedPlace.id and selectedDateObj (Date object) to getAvailableSlots
+        try {
+          const slots = await getAvailableSlots(selectedPlace.id, selectedDateObj);
+          setAvailableSlots(slots);
+          setSelectedSlot(null);
+          setIsFormOpen(false);
+        } catch (error) {
+          console.error('Error fetching available slots:', error);
+          setAvailableSlots([]);
+        }
+      }
+    };
+    
+    fetchAvailableSlots();
   }, [selectedPlace, selectedDate, selectedDateObj]);
   
   if (!selectedPlace || !selectedDate) {

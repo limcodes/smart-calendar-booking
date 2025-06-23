@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { 
   Box, 
   Typography, 
@@ -25,8 +25,10 @@ import { useAppContext } from '../../contexts/AppContext';
 import { getDaysWithAvailability } from '../../utils/timeUtils';
 
 const DateSelector: React.FC = () => {
-  const { selectedPlaceId, places, selectedDate, setSelectedDate } = useAppContext();
   const [currentMonth, setCurrentMonth] = useState(new Date());
+  const [availableDays, setAvailableDays] = useState<Date[]>([]);
+  
+  const { selectedPlaceId, places, selectedDate, setSelectedDate } = useAppContext();
   
   // Find the selected place using the selectedPlaceId
   const selectedPlace = selectedPlaceId ? places.find(place => place.id === selectedPlaceId) : null;
@@ -47,6 +49,20 @@ const DateSelector: React.FC = () => {
     setSelectedDate(format(day, 'yyyy-MM-dd'));
   };
   
+  // Fetch available days when month or place changes
+  useEffect(() => {
+    const fetchAvailableDays = async () => {
+      if (selectedPlace) {
+        const days = await getDaysWithAvailability(selectedPlace.id, currentMonth);
+        setAvailableDays(days);
+      } else {
+        setAvailableDays([]);
+      }
+    };
+    
+    fetchAvailableDays();
+  }, [selectedPlace, currentMonth]);
+
   if (!selectedPlace) {
     return null;
   }
@@ -55,13 +71,8 @@ const DateSelector: React.FC = () => {
   const monthEnd = endOfMonth(currentMonth);
   const daysInMonth = eachDayOfInterval({ start: monthStart, end: monthEnd });
   
-  // Get days with available slots
-  const availableDays = selectedPlace 
-    ? getDaysWithAvailability(selectedPlace.id, currentMonth) 
-    : [];
-
   const isDayAvailable = (day: Date) => {
-    return availableDays.some(availableDay => isSameDay(availableDay, day));
+    return availableDays.some((availableDay: Date) => isSameDay(availableDay, day));
   };
 
   return (
