@@ -67,11 +67,31 @@ const DateSelector: React.FC = () => {
     return null;
   }
 
+  // Get the start of the month
   const monthStart = startOfMonth(currentMonth);
   const monthEnd = endOfMonth(currentMonth);
+  
+  // Get the day of week of the first day (0 = Sunday, 1 = Monday, etc.)
+  const startDayOfWeek = monthStart.getDay();
+  
+  // Get all days in the month
   const daysInMonth = eachDayOfInterval({ start: monthStart, end: monthEnd });
   
-  const isDayAvailable = (day: Date) => {
+  // Generate calendar grid including previous month days to align correctly
+  const calendarDays: (Date | null)[] = [];
+  
+  // Add empty slots for days from previous month
+  for (let i = 0; i < startDayOfWeek; i++) {
+    calendarDays.push(null);
+  }
+  
+  // Add days of current month
+  daysInMonth.forEach(day => {
+    calendarDays.push(day);
+  });
+  
+  const isDayAvailable = (day: Date | null) => {
+    if (!day) return false;
     return availableDays.some((availableDay: Date) => isSameDay(availableDay, day));
   };
 
@@ -110,7 +130,16 @@ const DateSelector: React.FC = () => {
         </Grid>
         
         <Grid container spacing={1}>
-          {daysInMonth.map((day) => {
+          {calendarDays.map((day, index) => {
+            if (day === null) {
+              // Empty cell for previous month days
+              return (
+                <Grid key={`empty-${index}`} sx={{ width: `${100/7}%`, padding: '4px' }}>
+                  <Box sx={{ height: '40px' }} />
+                </Grid>
+              );
+            }
+            
             const isAvailable = isDayAvailable(day);
             const isSelected = selectedDateObj ? isSameDay(day, selectedDateObj) : false;
             

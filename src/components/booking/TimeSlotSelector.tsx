@@ -170,6 +170,7 @@ const TimeSlotSelector: React.FC = () => {
   // Convert selectedDate string to Date object when needed for date-fns functions
   const selectedDateObj = selectedDate ? parse(selectedDate, 'yyyy-MM-dd', new Date()) : null;
   
+  // This effect should only run when date or place changes, not when form state changes
   useEffect(() => {
     const fetchAvailableSlots = async () => {
       if (selectedPlace && selectedDate && selectedDateObj) {
@@ -177,8 +178,8 @@ const TimeSlotSelector: React.FC = () => {
         try {
           const slots = await getAvailableSlots(selectedPlace.id, selectedDateObj);
           setAvailableSlots(slots);
-          setSelectedSlot(null);
-          setIsFormOpen(false);
+          // Don't reset the selected slot or form state when just refreshing available slots
+          // This was causing the booking form to disappear immediately
         } catch (error) {
           console.error('Error fetching available slots:', error);
           setAvailableSlots([]);
@@ -187,7 +188,8 @@ const TimeSlotSelector: React.FC = () => {
     };
     
     fetchAvailableSlots();
-  }, [selectedPlace, selectedDate, selectedDateObj]);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [selectedPlace?.id, selectedDate]); // Only re-run when these specific values change
   
   if (!selectedPlace || !selectedDate) {
     return null;
