@@ -163,6 +163,7 @@ const TimeSlotSelector: React.FC = () => {
   const [availableSlots, setAvailableSlots] = useState<TimeSlot[]>([]);
   const [selectedSlot, setSelectedSlot] = useState<TimeSlot | null>(null);
   const [isFormOpen, setIsFormOpen] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
   
   // Find the selected place using the selectedPlaceId
   const selectedPlace = selectedPlaceId ? places.find(place => place.id === selectedPlaceId) : null;
@@ -176,6 +177,7 @@ const TimeSlotSelector: React.FC = () => {
       if (selectedPlace && selectedDate && selectedDateObj) {
         // Pass selectedPlace.id and selectedDateObj (Date object) to getAvailableSlots
         try {
+          setIsLoading(true);
           const slots = await getAvailableSlots(selectedPlace.id, selectedDateObj);
           setAvailableSlots(slots);
           // Don't reset the selected slot or form state when just refreshing available slots
@@ -183,6 +185,8 @@ const TimeSlotSelector: React.FC = () => {
         } catch (error) {
           console.error('Error fetching available slots:', error);
           setAvailableSlots([]);
+        } finally {
+          setIsLoading(false);
         }
       }
     };

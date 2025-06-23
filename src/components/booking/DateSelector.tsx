@@ -27,6 +27,7 @@ import { getDaysWithAvailability } from '../../utils/timeUtils';
 const DateSelector: React.FC = () => {
   const [currentMonth, setCurrentMonth] = useState(new Date());
   const [availableDays, setAvailableDays] = useState<Date[]>([]);
+  const [isLoading, setIsLoading] = useState(false);
   
   const { selectedPlaceId, places, selectedDate, setSelectedDate } = useAppContext();
   
@@ -53,8 +54,16 @@ const DateSelector: React.FC = () => {
   useEffect(() => {
     const fetchAvailableDays = async () => {
       if (selectedPlace) {
-        const days = await getDaysWithAvailability(selectedPlace.id, currentMonth);
-        setAvailableDays(days);
+        setIsLoading(true);
+        try {
+          const days = await getDaysWithAvailability(selectedPlace.id, currentMonth);
+          setAvailableDays(days);
+        } catch (error) {
+          console.error('Error fetching available days:', error);
+          setAvailableDays([]);
+        } finally {
+          setIsLoading(false);
+        }
       } else {
         setAvailableDays([]);
       }
@@ -97,7 +106,22 @@ const DateSelector: React.FC = () => {
 
   return (
     <Container maxWidth="md" sx={{ mt: 4 }}>
-      <Paper elevation={3} sx={{ p: 3 }}>
+      <Paper elevation={3} sx={{ p: 3, position: 'relative' }}>
+        {isLoading && (
+          <Box sx={{ 
+            position: 'absolute',
+            top: 0,
+            left: 0,
+            right: 0,
+            display: 'flex',
+            justifyContent: 'center',
+            p: 1,
+            bgcolor: 'rgba(255, 255, 255, 0.8)',
+            zIndex: 1
+          }}>
+            <Typography variant="body2" color="primary">Loading available days...</Typography>
+          </Box>
+        )}
         <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 2 }}>
           <Typography variant="h5" component="h2">
             Select a Date
