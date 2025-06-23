@@ -13,14 +13,11 @@ import {
 import { useAppContext } from '../../contexts/AppContext';
 
 const PlaceSelector: React.FC = () => {
-  const { places, selectedPlace, setSelectedPlace } = useAppContext();
+  const { places, selectedPlaceId, setSelectedPlaceId } = useAppContext();
 
   const handleChange = (event: SelectChangeEvent) => {
     const selectedId = event.target.value;
-    const place = places.find(p => p.id === selectedId);
-    if (place) {
-      setSelectedPlace(place);
-    }
+    setSelectedPlaceId(selectedId);
   };
 
   return (
@@ -44,7 +41,7 @@ const PlaceSelector: React.FC = () => {
               <Select
                 labelId="place-select-label"
                 id="place-select"
-                value={selectedPlace?.id || ''}
+                value={selectedPlaceId || ''}
                 label="Location"
                 onChange={handleChange}
               >

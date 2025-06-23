@@ -1,9 +1,12 @@
-import React, { useState } from 'react';
-import { Box, Tab, Tabs, Typography, Container, Paper } from '@mui/material';
+import React, { useState, useEffect } from 'react';
+import { Box, Tab, Tabs, Typography, Container, Paper, CircularProgress } from '@mui/material';
 import { useAppContext } from '../../contexts/AppContext';
 import PlacesManager from './PlacesManager';
 import AvailabilityRulesManager from './AvailabilityRulesManager';
 import BookedSlotsManager from './BookedSlotsManager';
+import { useParams } from 'react-router-dom';
+import { useAuthState } from 'react-firebase-hooks/auth';
+import { auth } from '../../config/firebase';
 
 interface TabPanelProps {
   children?: React.ReactNode;
@@ -40,18 +43,42 @@ function a11yProps(index: number) {
 
 const AdminDashboard: React.FC = () => {
   const [tabValue, setTabValue] = useState(0);
-  const { refreshData } = useAppContext();
+  const { username } = useParams<{ username: string }>();
+  const [user, authLoading] = useAuthState(auth);
+  const { 
+    setCalendarOwnerUsername,
+    loading,
+    calendarOwnerId 
+  } = useAppContext();
+
+  // Set the calendar owner username in context when this component mounts
+  useEffect(() => {
+    if (username) {
+      setCalendarOwnerUsername(username);
+    }
+  }, [username, setCalendarOwnerUsername]);
 
   const handleTabChange = (event: React.SyntheticEvent, newValue: number) => {
     setTabValue(newValue);
   };
+
+  // Show loading state while authentication or data is loading
+  if (authLoading || loading || (username && !calendarOwnerId)) {
+    return (
+      <Container maxWidth="lg" sx={{ mt: 4 }}>
+        <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', minHeight: '60vh' }}>
+          <CircularProgress />
+        </Box>
+      </Container>
+    );
+  }
 
   return (
     <Container maxWidth="lg" sx={{ mt: 4 }}>
       <Paper elevation={3}>
         <Box sx={{ p: 3 }}>
           <Typography variant="h4" component="h1" gutterBottom>
-            Admin Dashboard
+            {username ? `${username}'s Calendar Admin` : 'Admin Dashboard'}
           </Typography>
           <Typography variant="body1" color="text.secondary" paragraph>
             Manage places, availability rules, and view booked slots.

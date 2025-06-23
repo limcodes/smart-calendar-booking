@@ -12,7 +12,7 @@ import {
   IconButton
 } from '@mui/material';
 import { ArrowBack } from '@mui/icons-material';
-import { format } from 'date-fns';
+import { format, parse } from 'date-fns';
 import { useAppContext } from '../../contexts/AppContext';
 import { getAvailableSlots } from '../../utils/timeUtils';
 import { TimeSlot } from '../../models/types';
@@ -24,10 +24,16 @@ interface BookingFormProps {
 
 // Simple inline implementation of BookingForm component
 const BookingFormComponent: React.FC<BookingFormProps> = ({ slot, onBack }) => {
-  const { selectedPlace, selectedDate, addBookedSlot } = useAppContext();
+  const { selectedPlaceId, places, selectedDate, addBookedSlot } = useAppContext();
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [isSubmitted, setIsSubmitted] = useState(false);
+  
+  // Find the selected place using the selectedPlaceId
+  const selectedPlace = selectedPlaceId ? places.find(place => place.id === selectedPlaceId) : null;
+  
+  // Convert selectedDate string to Date object when needed for date-fns functions
+  const selectedDateObj = selectedDate ? parse(selectedDate, 'yyyy-MM-dd', new Date()) : null;
   
   if (!selectedPlace || !selectedDate) {
     return null;
@@ -38,7 +44,7 @@ const BookingFormComponent: React.FC<BookingFormProps> = ({ slot, onBack }) => {
     
     const bookingData = {
       placeId: selectedPlace.id,
-      date: format(selectedDate, 'yyyy-MM-dd'),
+      date: selectedDate, // Keep the date in the format stored in context
       startTime: slot.startTime,
       endTime: slot.endTime,
       customerName: name,
@@ -65,7 +71,7 @@ const BookingFormComponent: React.FC<BookingFormProps> = ({ slot, onBack }) => {
           <Typography variant="body1">{selectedPlace.name}</Typography>
           
           <Typography variant="body1" fontWeight="bold">Date:</Typography>
-          <Typography variant="body1">{format(selectedDate, 'EEEE, MMM dd, yyyy')}</Typography>
+          <Typography variant="body1">{selectedDateObj ? format(selectedDateObj, 'EEEE, MMM dd, yyyy') : ''}</Typography>
           
           <Typography variant="body1" fontWeight="bold">Time:</Typography>
           <Typography variant="body1">{slot.startTime} - {slot.endTime}</Typography>
@@ -107,7 +113,7 @@ const BookingFormComponent: React.FC<BookingFormProps> = ({ slot, onBack }) => {
         <Typography variant="body1">{selectedPlace.area}</Typography>
         
         <Typography variant="body1" fontWeight="bold">Date:</Typography>
-        <Typography variant="body1">{format(selectedDate, 'EEEE, MMM dd, yyyy')}</Typography>
+        <Typography variant="body1">{selectedDateObj ? format(selectedDateObj, 'EEEE, MMM dd, yyyy') : ''}</Typography>
         
         <Typography variant="body1" fontWeight="bold">Time:</Typography>
         <Typography variant="body1">{slot.startTime} - {slot.endTime}</Typography>
@@ -153,19 +159,26 @@ const BookingFormComponent: React.FC<BookingFormProps> = ({ slot, onBack }) => {
 };
 
 const TimeSlotSelector: React.FC = () => {
-  const { selectedPlace, selectedDate } = useAppContext();
+  const { selectedPlaceId, places, selectedDate } = useAppContext();
   const [availableSlots, setAvailableSlots] = useState<TimeSlot[]>([]);
   const [selectedSlot, setSelectedSlot] = useState<TimeSlot | null>(null);
   const [isFormOpen, setIsFormOpen] = useState(false);
   
+  // Find the selected place using the selectedPlaceId
+  const selectedPlace = selectedPlaceId ? places.find(place => place.id === selectedPlaceId) : null;
+  
+  // Convert selectedDate string to Date object when needed for date-fns functions
+  const selectedDateObj = selectedDate ? parse(selectedDate, 'yyyy-MM-dd', new Date()) : null;
+  
   useEffect(() => {
-    if (selectedPlace && selectedDate) {
-      const slots = getAvailableSlots(selectedPlace.id, selectedDate);
+    if (selectedPlace && selectedDate && selectedDateObj) {
+      // Pass selectedPlace.id and selectedDateObj (Date object) to getAvailableSlots
+      const slots = getAvailableSlots(selectedPlace.id, selectedDateObj);
       setAvailableSlots(slots);
       setSelectedSlot(null);
       setIsFormOpen(false);
     }
-  }, [selectedPlace, selectedDate]);
+  }, [selectedPlace, selectedDate, selectedDateObj]);
   
   if (!selectedPlace || !selectedDate) {
     return null;
@@ -199,7 +212,7 @@ const TimeSlotSelector: React.FC = () => {
                 Available Time Slots
               </Typography>
               <Typography variant="subtitle1" color="text.secondary">
-                {selectedPlace.name} ({selectedPlace.area}) - {format(selectedDate, 'EEEE, MMM dd, yyyy')}
+                {selectedPlace.name} ({selectedPlace.area}) - {selectedDateObj ? format(selectedDateObj, 'EEEE, MMM dd, yyyy') : ''}
               </Typography>
               <Divider sx={{ my: 2 }} />
             </Box>

@@ -17,15 +17,22 @@ import {
   isSameMonth,
   addMonths,
   subMonths,
-  isSameDay
+  isSameDay,
+  parse
 } from 'date-fns';
 import { ChevronLeft, ChevronRight } from '@mui/icons-material';
 import { useAppContext } from '../../contexts/AppContext';
 import { getDaysWithAvailability } from '../../utils/timeUtils';
 
 const DateSelector: React.FC = () => {
-  const { selectedPlace, selectedDate, setSelectedDate } = useAppContext();
+  const { selectedPlaceId, places, selectedDate, setSelectedDate } = useAppContext();
   const [currentMonth, setCurrentMonth] = useState(new Date());
+  
+  // Find the selected place using the selectedPlaceId
+  const selectedPlace = selectedPlaceId ? places.find(place => place.id === selectedPlaceId) : null;
+  
+  // Convert selectedDate string to Date object when needed for date-fns functions
+  const selectedDateObj = selectedDate ? parse(selectedDate, 'yyyy-MM-dd', new Date()) : null;
   
   const handlePrevMonth = () => {
     setCurrentMonth(subMonths(currentMonth, 1));
@@ -36,7 +43,8 @@ const DateSelector: React.FC = () => {
   };
   
   const handleDateClick = (day: Date) => {
-    setSelectedDate(day);
+    // Convert the Date object to a string in 'yyyy-MM-dd' format before setting it
+    setSelectedDate(format(day, 'yyyy-MM-dd'));
   };
   
   if (!selectedPlace) {
@@ -93,7 +101,7 @@ const DateSelector: React.FC = () => {
         <Grid container spacing={1}>
           {daysInMonth.map((day) => {
             const isAvailable = isDayAvailable(day);
-            const isSelected = isSameDay(day, selectedDate);
+            const isSelected = selectedDateObj ? isSameDay(day, selectedDateObj) : false;
             
             return (
               <Grid key={day.toString()} sx={{ width: `${100/7}%`, padding: '4px' }}>

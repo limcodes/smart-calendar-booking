@@ -5,6 +5,10 @@ import { AppProvider } from './contexts/AppContext';
 import BookingPage from './components/booking/BookingPage';
 import AdminDashboard from './components/admin/AdminDashboard';
 import Header from './components/common/Header';
+import Login from './components/auth/Login';
+import SignUp from './components/auth/SignUp';
+import ProtectedRoute from './components/auth/ProtectedRoute';
+import HomePage from './components/HomePage';
 
 // Create a custom theme
 const theme = createTheme({
@@ -29,8 +33,27 @@ function App() {
         <BrowserRouter>
           <Header />
           <Routes>
-            <Route path="/" element={<BookingPage />} />
-            <Route path="/admin" element={<AdminDashboard />} />
+            {/* Authentication routes */}
+            <Route path="/login" element={<Login />} />
+            <Route path="/signup" element={<SignUp />} />
+            
+            {/* Main home page with featured calendars or application info */}
+            <Route path="/" element={<HomePage />} />
+            
+            {/* User-specific calendar booking page */}
+            <Route path="/:username" element={<BookingPage />} />
+            
+            {/* Protected admin route with username parameter */}
+            <Route 
+              path="/:username/admin" 
+              element={
+                <ProtectedRoute>
+                  <AdminDashboard />
+                </ProtectedRoute>
+              } 
+            />
+            
+            {/* Redirect any unmatched routes to home */}
             <Route path="*" element={<Navigate to="/" replace />} />
           </Routes>
         </BrowserRouter>

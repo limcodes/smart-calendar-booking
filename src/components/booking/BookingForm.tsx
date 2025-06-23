@@ -9,7 +9,7 @@ import {
   IconButton
 } from '@mui/material';
 import { ArrowBack } from '@mui/icons-material';
-import { format } from 'date-fns';
+import { format, parse } from 'date-fns';
 import { useAppContext } from '../../contexts/AppContext';
 import { TimeSlot } from '../../models/types';
 
@@ -19,10 +19,18 @@ interface BookingFormProps {
 }
 
 const BookingForm: React.FC<BookingFormProps> = ({ slot, onBack }) => {
-  const { selectedPlace, selectedDate, addBookedSlot } = useAppContext();
+  const { selectedPlaceId, places, selectedDate, addBookedSlot } = useAppContext();
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [isSubmitted, setIsSubmitted] = useState(false);
+  
+  // Find the selected place using the selectedPlaceId
+  const selectedPlace = selectedPlaceId ? places.find(place => place.id === selectedPlaceId) : null;
+  
+  // Convert the selectedDate string to a Date object if it's a string
+  const selectedDateObj = selectedDate ? 
+    (typeof selectedDate === 'string' ? parse(selectedDate, 'yyyy-MM-dd', new Date()) : selectedDate) : 
+    null;
   
   if (!selectedPlace || !selectedDate) {
     return null;
@@ -33,7 +41,7 @@ const BookingForm: React.FC<BookingFormProps> = ({ slot, onBack }) => {
     
     const bookingData = {
       placeId: selectedPlace.id,
-      date: format(selectedDate, 'yyyy-MM-dd'),
+      date: selectedDate, // Store the date as it is in the context
       startTime: slot.startTime,
       endTime: slot.endTime,
       customerName: name,
@@ -67,7 +75,7 @@ const BookingForm: React.FC<BookingFormProps> = ({ slot, onBack }) => {
             <Typography variant="body1" fontWeight="bold">Date:</Typography>
           </Grid>
           <Grid item xs={8} sm={9}>
-            <Typography variant="body1">{format(selectedDate, 'EEEE, MMM dd, yyyy')}</Typography>
+            <Typography variant="body1">{selectedDateObj ? format(selectedDateObj, 'EEEE, MMM dd, yyyy') : ''}</Typography>
           </Grid>
           
           <Grid item xs={4} sm={3}>
@@ -126,7 +134,7 @@ const BookingForm: React.FC<BookingFormProps> = ({ slot, onBack }) => {
         
         <Grid item xs={12} sm={6}>
           <Typography variant="body1" fontWeight="bold">Date:</Typography>
-          <Typography variant="body1">{format(selectedDate, 'EEEE, MMM dd, yyyy')}</Typography>
+          <Typography variant="body1">{selectedDateObj ? format(selectedDateObj, 'EEEE, MMM dd, yyyy') : ''}</Typography>
         </Grid>
         <Grid item xs={12} sm={6}>
           <Typography variant="body1" fontWeight="bold">Time:</Typography>
