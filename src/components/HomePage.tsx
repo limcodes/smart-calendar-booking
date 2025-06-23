@@ -1,12 +1,34 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { Box, Typography, Button, Container, Paper, Grid, Card, CardContent, CardActions } from '@mui/material';
 import { useNavigate } from 'react-router-dom';
 import { useAuthState } from 'react-firebase-hooks/auth';
-import { auth } from '../config/firebase';
+import { auth, db } from '../config/firebase';
+import { doc, getDoc } from 'firebase/firestore';
 
 const HomePage: React.FC = () => {
   const [user] = useAuthState(auth);
+  const [username, setUsername] = useState<string | null>(null);
   const navigate = useNavigate();
+
+  // Fetch the user's username from Firestore when the user is authenticated
+  useEffect(() => {
+    const fetchUsername = async () => {
+      if (user && user.uid) {
+        try {
+          // Get user data from Firestore
+          const userDoc = await getDoc(doc(db, 'users', user.uid));
+          if (userDoc.exists()) {
+            const userData = userDoc.data();
+            setUsername(userData.username);
+          }
+        } catch (error) {
+          console.error('Error fetching user data:', error);
+        }
+      }
+    };
+
+    fetchUsername();
+  }, [user]);
 
   return (
     <Box sx={{ flexGrow: 1 }}>
@@ -55,7 +77,8 @@ const HomePage: React.FC = () => {
                     variant="contained" 
                     size="large" 
                     color="secondary"
-                    onClick={() => navigate(`/${user.displayName?.split(' ')[0].toLowerCase() || 'calendar'}/admin`)}
+                    onClick={() => navigate(`/${username || 'calendar'}/admin`)}
+                    disabled={!username}
                   >
                     Manage My Calendar
                   </Button>
@@ -189,7 +212,7 @@ const HomePage: React.FC = () => {
             variant="contained" 
             color="primary" 
             size="large"
-            onClick={() => navigate(`/${user.displayName?.split(' ')[0].toLowerCase() || 'calendar'}/admin`)}
+            onClick={() => navigate(`/${username || 'calendar'}/admin`)}
           >
             Go to My Dashboard
           </Button>
