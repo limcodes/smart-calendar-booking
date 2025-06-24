@@ -1,0 +1,46 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8">
+    <title>Smart Calendar Booking</title>
+    <script type="text/javascript">
+      // Single page apps for GitHub Pages
+      // MIT License
+      // https://github.com/rafgraph/spa-github-pages
+      var pathSegmentsToKeep = 1;
+
+      var l = window.location;
+      var segmentCount = l.pathname.split('/').length;
+      var basePath = '/smart-calendar-booking';
+      
+      // Storing the path for use after redirect
+      localStorage.setItem('spa_path', 
+        l.pathname
+          .slice(1)
+          .split('/')
+          .slice(pathSegmentsToKeep)
+          .join('/')
+          .replace(/&/g, '~and~') +
+        (l.search ? '?' + l.search.slice(1).replace(/&/g, '~and~') : '') +
+        l.hash
+      );
+      
+      // Redirect to the base path
+      l.replace(
+        l.protocol + '//' + l.hostname + (l.port ? ':' + l.port : '') +
+        basePath + '/?/' +
+        l.pathname
+          .slice(1)
+          .split('/')
+          .slice(pathSegmentsToKeep)
+          .join('/')
+          .replace(/&/g, '~and~') +
+        (l.search ? '&' + l.search.slice(1).replace(/&/g, '~and~') : '') +
+        l.hash
+      );
+    </script>
+  </head>
+  <body>
+    Redirecting...
+  </body>
+</html>
