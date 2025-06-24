@@ -30,7 +30,7 @@ function App() {
     <ThemeProvider theme={theme}>
       <CssBaseline />
       <AppProvider>
-        <BrowserRouter>
+        <BrowserRouter basename="/smart-calendar-booking">
           <Header />
           <Routes>
             {/* Authentication routes */}
