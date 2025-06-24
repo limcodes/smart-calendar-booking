@@ -134,51 +134,17 @@ export const getAvailableSlots = async (
       return slotPlace && slotPlace.area === selectedPlace.area;
     });
     
-    // Combine all rules and generate potential slots
-    const allSlots: TimeSlot[] = [];
+    // First, analyze booked slots and their buffer periods to determine forbidden time ranges
+    const forbiddenRanges: { start: Date; end: Date }[] = [];
     
-    // Process each availability rule to create slots
-    availabilityRules.forEach((rule: AvailabilityRule) => {
-      const startDate = parseTimeString(rule.startTime, dateStr);
-      const endDate = parseTimeString(rule.endTime, dateStr);
-      
-      let currentTime = startDate;
-      
-      while (currentTime < endDate) {
-        const slotStartTime = formatTimeString(currentTime);
-        const slotEndTime = formatTimeString(addMinutes(currentTime, slotDurationMinutes));
-        
-        const slot: TimeSlot = {
-          startTime: slotStartTime,
-          endTime: slotEndTime,
-          isAvailable: true
-        };
-        
-        allSlots.push(slot);
-        currentTime = addMinutes(currentTime, slotDurationMinutes);
-      }
-    });
-
-    // Mark slots as unavailable if they overlap with booked slots for this place
+    // Add booked slots for this place to forbidden ranges
     bookedSlotsForPlace.forEach((bookedSlot: BookedSlot) => {
       const bookedStart = parseTimeString(bookedSlot.startTime, dateStr);
       const bookedEnd = parseTimeString(bookedSlot.endTime, dateStr);
-      
-      allSlots.forEach((slot: TimeSlot) => {
-        const slotStart = parseTimeString(slot.startTime, dateStr);
-        const slotEnd = parseTimeString(slot.endTime, dateStr);
-        
-        if (
-          (slotStart >= bookedStart && slotStart < bookedEnd) ||
-          (slotEnd > bookedStart && slotEnd <= bookedEnd) ||
-          (slotStart <= bookedStart && slotEnd >= bookedEnd)
-        ) {
-          slot.isAvailable = false;
-        }
-      });
+      forbiddenRanges.push({ start: bookedStart, end: bookedEnd });
     });
-
-    // Consider buffer time for other places in the same area
+    
+    // Add other places in same area with buffer times to forbidden ranges
     otherPlaceBookedSlots.forEach((bookedSlot: BookedSlot) => {
       const bookedStart = parseTimeString(bookedSlot.startTime, dateStr);
       const bookedEnd = parseTimeString(bookedSlot.endTime, dateStr);
@@ -187,19 +153,117 @@ export const getAvailableSlots = async (
       const bufferBeforeStart = addMinutes(bookedStart, -travelBufferMinutes);
       const bufferAfterEnd = addMinutes(bookedEnd, travelBufferMinutes);
       
-      allSlots.forEach((slot: TimeSlot) => {
-        const slotStart = parseTimeString(slot.startTime, dateStr);
-        const slotEnd = parseTimeString(slot.endTime, dateStr);
+      forbiddenRanges.push({ start: bufferBeforeStart, end: bufferAfterEnd });
+    });
+    
+    // Combine all rules and generate potential slots
+    const allSlots: TimeSlot[] = [];
+    
+    // Process each availability rule to create slots
+    availabilityRules.forEach((rule: AvailabilityRule) => {
+      const startDate = parseTimeString(rule.startTime, dateStr);
+      const endDate = parseTimeString(rule.endTime, dateStr);
+      
+      // Process each forbidden range to create available segments
+      const availableSegments: { start: Date; end: Date }[] = [{ start: startDate, end: endDate }];
+      
+      // Split segments by forbidden ranges
+      forbiddenRanges.forEach(forbiddenRange => {
+        for (let i = 0; i < availableSegments.length; i++) {
+          const segment = availableSegments[i];
+          
+          // Check if this segment overlaps with the forbidden range
+          if (
+            (segment.start < forbiddenRange.end && segment.end > forbiddenRange.start)
+          ) {
+            // Remove the current segment
+            availableSegments.splice(i, 1);
+            
+            // Add segment before forbidden range (if any)
+            if (segment.start < forbiddenRange.start) {
+              availableSegments.push({
+                start: segment.start,
+                end: forbiddenRange.start
+              });
+            }
+            
+            // Add segment after forbidden range (if any)
+            if (segment.end > forbiddenRange.end) {
+              availableSegments.push({
+                start: forbiddenRange.end,
+                end: segment.end
+              });
+            }
+            
+            // Adjust index since we modified the array
+            i--;
+          }
+        }
+      });
+      
+      // Generate slots for each available segment
+      availableSegments.forEach(segment => {
+        let currentTime = segment.start;
         
-        if (
-          (slotStart >= bufferBeforeStart && slotStart < bufferAfterEnd) ||
-          (slotEnd > bufferBeforeStart && slotEnd <= bufferAfterEnd) ||
-          (slotStart <= bufferBeforeStart && slotEnd >= bufferAfterEnd)
-        ) {
-          slot.isAvailable = false;
+        // Check if this segment starts right after a buffer period
+        // If so, we'll allow it to start at a 30-minute increment
+        const isAfterBuffer = forbiddenRanges.some(range => {
+          const rangeEndMinutes = range.end.getMinutes();
+          return Math.abs(currentTime.getTime() - range.end.getTime()) < 60000; // Within 1 minute
+        });
+        
+        // For segments after buffer periods, round to nearest 30 min increment if needed
+        if (isAfterBuffer) {
+          const minutes = currentTime.getMinutes();
+          // If not already on a 30-minute boundary, round up to next 30-minute mark
+          if (minutes % 30 !== 0) {
+            currentTime = setMinutes(currentTime, Math.ceil(minutes / 30) * 30);
+          }
+        } else {
+          // For normal segments, round to nearest hour if needed
+          const minutes = currentTime.getMinutes();
+          if (minutes !== 0) {
+            currentTime = setMinutes(currentTime, 0);
+            currentTime = addMinutes(currentTime, 60); // Move to next hour
+          }
+        }
+        
+        while (currentTime < segment.end) {
+          // Ensure there's enough time for a full slot
+          if (addMinutes(currentTime, slotDurationMinutes) > segment.end) {
+            break;
+          }
+          
+          const slotStartTime = formatTimeString(currentTime);
+          const slotEndTime = formatTimeString(addMinutes(currentTime, slotDurationMinutes));
+          
+          const slot: TimeSlot = {
+            startTime: slotStartTime,
+            endTime: slotEndTime,
+            isAvailable: true
+          };
+          
+          allSlots.push(slot);
+          
+          // Increment by slot duration
+          currentTime = addMinutes(currentTime, slotDurationMinutes);
         }
       });
     });
+
+    // Our new approach already handles forbidden ranges during slot generation,
+    // so we don't need to mark slots as unavailable afterward
+    // This makes the algorithm faster and also supports the 30-min increment requirement
+    
+    // Add debugging information about the slots
+    if (allSlots.length > 0) {
+      console.log(`Generated ${allSlots.length} slots, including:`);
+      allSlots.forEach(slot => {
+        console.log(`- ${slot.startTime} to ${slot.endTime}`);
+      });
+    } else {
+      console.log('No available slots generated for this date');
+    }
 
     return allSlots;
   } catch (error) {
